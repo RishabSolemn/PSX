@@ -1,81 +1,189 @@
-a<!-- templates/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>PSX – Port Scanner eXtreme</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body {
+      background-color: #0c0f13;
+      color: white;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .scanner-container {
+      max-width: 800px;
+      margin: auto;
+      padding-top: 60px;
+    }
+    #loadingScreen {
+      display: none;
+      background-color: rgba(0, 0, 0, 0.9);
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+    #permissionPopup {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.8);
+      z-index: 9998;
+      justify-content: center;
+      align-items: center;
+    }
+    .popup-card {
+      background: #1c1e22;
+      padding: 30px;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 0 20px rgba(255,255,255,0.1);
+    }
+    .threat-bar {
+      height: 25px;
+      background: #444;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .threat-bar-inner {
+      height: 100%;
+      width: 0;
+      transition: width 0.7s ease;
+    }
+    .rasengan-img {
+      width: 160px;
+      height: auto;
+      animation: pulse 2s infinite ease-in-out;
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.1); opacity: 0.8; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+  </style>
 </head>
 <body>
-  <!-- Loading Animation -->
-  <div id="loadingOverlay" class="loading-overlay d-none">
-    <img src="{{ url_for('static', filename='img/rasengan.gif') }}" alt="Loading Rasengan">
-  </div>
 
-  <!-- Pre-Scan Questionnaire Modal -->
-  <div class="modal fade" id="questionnaireModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content bg-dark text-white">
-        <div class="modal-header">
-          <h5 class="modal-title">Pre-Scan Questionnaire</h5>
-        </div>
-        <div class="modal-body">
-          <input type="text" class="form-control mb-2" id="userName" placeholder="Your Name">
-          <input type="text" class="form-control mb-2" id="targetHost" placeholder="Target IP or Domain">
-          <input type="text" class="form-control" id="portRange" placeholder="Port Range (e.g., 20-80)">
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-primary" onclick="showPermissionModal()">Next</button>
-        </div>
-      </div>
+<div class="scanner-container">
+  <h2 class="text-center mb-4">🔍 PSX – Port Scanner eXtreme</h2>
+  <form id="scanForm" class="mb-4">
+    <div class="mb-3">
+      <input type="text" id="host" class="form-control" placeholder="Enter domain or IP (e.g. example.com)" required />
     </div>
-  </div>
-
-  <!-- Permission Modal -->
-  <div class="modal fade" id="permissionModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content bg-danger text-white">
-        <div class="modal-header">
-          <h5 class="modal-title">Confirm Scan</h5>
-        </div>
-        <div class="modal-body">
-          <p>Do you have permission to scan this target? Scanning without consent may be illegal.</p>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-light" onclick="closePage()">No</button>
-          <button class="btn btn-success" onclick="startScan()">Yes</button>
-        </div>
-      </div>
+    <div class="mb-3">
+      <input type="text" id="portRange" class="form-control" placeholder="Port range (e.g. 1-1024, default)" />
     </div>
-  </div>
-
-  <!-- Main Content -->
-  <div class="container py-5">
-    <h1 class="mb-4">PSX – Port Scanner eXtreme</h1>
-    
-    <!-- Threat Meter -->
-    <div class="threat-meter mb-4">
-      <label for="threatLevel">Threat Level</label>
-      <div class="progress">
-        <div id="threatBar" class="progress-bar" role="progressbar" style="width: 0%">Low</div>
-      </div>
+    <div class="mb-3">
+      <input type="text" id="username" class="form-control" placeholder="Your name (optional)" />
     </div>
+    <button type="submit" class="btn btn-primary w-100">Start Scan</button>
+  </form>
 
-    <!-- Results -->
-    <div id="resultsSection" class="card p-3 d-none">
-      <h4>Scan Results</h4>
-      <div id="portResults"></div>
-      <div id="geoInfo" class="mt-3"></div>
-      <div id="deceptionAlert" class="mt-2 text-warning fw-bold"></div>
-      <div id="scanTimeline" class="mt-4"></div>
-      <button class="btn btn-secondary mt-3" onclick="downloadLog()">Download Scan Log</button>
+  <div id="scanResult" class="mt-4" style="display:none;">
+    <h4>📊 Scan Results</h4>
+    <p><strong>Target:</strong> <span id="targetIP"></span></p>
+    <p><strong>Location:</strong> <span id="geoInfo"></span></p>
+    <p><strong>Threat Level:</strong> <span id="threatLevel" class="fw-bold"></span></p>
+    <div class="threat-bar mb-3">
+      <div class="threat-bar-inner" id="threatBar"></div>
     </div>
+    <p><strong>Open Ports:</strong> <span id="openPorts"></span></p>
   </div>
+</div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+<!-- Rasengan Loader -->
+<div id="loadingScreen" class="d-flex">
+  <img src="https://media.tenor.com/dR6cVPnYIvMAAAAC/naruto-rasengan.gif" class="rasengan-img" alt="Loading..." />
+</div>
+
+<!-- Permission Popup -->
+<div id="permissionPopup" class="d-flex">
+  <div class="popup-card">
+    <h5>Allow PSX to scan this domain?</h5>
+    <p>This scan may take a few moments and access external systems.</p>
+    <button id="allowScan" class="btn btn-success me-2">Yes, Scan</button>
+    <button id="denyScan" class="btn btn-danger">No</button>
+  </div>
+</div>
+
+<script>
+function isBlockedHost(host) {
+  const blocked = ["0.0.0.0", "127.0.0.1", "localhost"];
+  return blocked.includes(host.trim());
+}
+
+let pendingScan = null;
+
+document.getElementById("scanForm").addEventListener("submit", function(e) {
+  e.preventDefault();
+  const host = document.getElementById("host").value.trim();
+  const portRange = document.getElementById("portRange").value.trim() || "1-1024";
+  const user = document.getElementById("username").value.trim() || "Anonymous";
+
+  if (isBlockedHost(host)) {
+    alert("❌ Scanning this host is not allowed: " + host);
+    return;
+  }
+
+  pendingScan = { host, portRange, user };
+  document.getElementById("permissionPopup").style.display = "flex";
+});
+
+document.getElementById("allowScan").onclick = () => {
+  if (!pendingScan) return;
+  document.getElementById("permissionPopup").style.display = "none";
+  document.getElementById("loadingScreen").style.display = "flex";
+
+  fetch("/scan", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      host: pendingScan.host,
+      range: pendingScan.portRange,
+      name: pendingScan.user
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    document.getElementById("loadingScreen").style.display = "none";
+    if (data.error) {
+      alert(data.error);
+      return;
+    }
+    document.getElementById("scanResult").style.display = "block";
+    document.getElementById("targetIP").innerText = data.ip;
+    document.getElementById("geoInfo").innerText = `${data.geo.city}, ${data.geo.country}`;
+    document.getElementById("threatLevel").innerText = data.threat_level;
+    document.getElementById("openPorts").innerText = data.open_ports.join(", ") || "None";
+
+    const bar = document.getElementById("threatBar");
+    if (data.threat_level === "Low") {
+      bar.style.backgroundColor = "green";
+      bar.style.width = "20%";
+    } else if (data.threat_level === "Medium") {
+      bar.style.backgroundColor = "orange";
+      bar.style.width = "60%";
+    } else {
+      bar.style.backgroundColor = "red";
+      bar.style.width = "100%";
+    }
+  })
+  .catch(err => {
+    document.getElementById("loadingScreen").style.display = "none";
+    alert("An error occurred.");
+    console.error(err);
+  });
+};
+
+document.getElementById("denyScan").onclick = () => {
+  window.close(); // closes tab if possible
+};
+</script>
+
 </body>
 </html>
-
