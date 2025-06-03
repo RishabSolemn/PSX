@@ -1,54 +1,12 @@
 body {
-  background-color: #0c0f13;
-  color: white;
-  font-family: 'Segoe UI', sans-serif;
+    background-color: #0f0f0f;
+    color: white;
+    font-family: 'Segoe UI', sans-serif;
 }
-#loadingScreen {
-  display: none;
-  background-color: rgba(0, 0, 0, 0.9);
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  z-index: 9999;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
+input, button {
+    border-radius: 6px;
 }
-#permissionPopup {
-  display: none;
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: rgba(0,0,0,0.8);
-  z-index: 9998;
-  justify-content: center;
-  align-items: center;
-}
-.popup-card {
-  background: #1c1e22;
-  padding: 30px;
-  border-radius: 12px;
-  text-align: center;
-  box-shadow: 0 0 20px rgba(255,255,255,0.1);
-}
-.threat-bar {
-  height: 25px;
-  background: #444;
-  border-radius: 8px;
-  overflow: hidden;
-}
-.threat-bar-inner {
-  height: 100%;
-  width: 0;
-  transition: width 0.7s ease;
-}
-.rasengan-img {
-  width: 160px;
-  height: auto;
-  animation: pulse 2s infinite ease-in-out;
-}
-@keyframes pulse {
-  0% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.1); opacity: 0.8; }
-  100% { transform: scale(1); opacity: 1; }
+.rasengan-loader {
+    width: 150px;
+    margin: 20px auto;
 }
