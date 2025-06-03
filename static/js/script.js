@@ -1,11 +1,19 @@
+window.onload = () => {
+  const questionnaireModal = new bootstrap.Modal(document.getElementById('questionnaireModal'));
+  questionnaireModal.show();
+};
+
 function showPermissionModal() {
-  const name = document.getElementById('userName').value;
-  const host = document.getElementById('targetHost').value;
-  if (!name || !host) {
-    alert("Please fill out your name and target.");
+  const name = document.getElementById('userName').value.trim();
+  const host = document.getElementById('targetHost').value.trim();
+
+  if (!name || !host || host === "0.0.0.0") {
+    alert("Please fill out your name and a valid target.");
     return;
   }
-  new bootstrap.Modal(document.getElementById('permissionModal')).show();
+
+  const permissionModal = new bootstrap.Modal(document.getElementById('permissionModal'));
+  permissionModal.show();
 }
 
 function closePage() {
@@ -13,15 +21,19 @@ function closePage() {
 }
 
 function startScan() {
-  document.getElementById('permissionModal').classList.remove('show');
-  document.querySelector('.modal-backdrop').remove();
+  const permissionModalEl = document.getElementById('permissionModal');
+  const permissionModal = bootstrap.Modal.getInstance(permissionModalEl);
+  permissionModal.hide();
+
+  // Hide backdrop manually if needed
+  document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
 
   const overlay = document.getElementById('loadingOverlay');
   overlay.classList.remove('d-none');
 
-  const name = document.getElementById('userName').value;
-  const host = document.getElementById('targetHost').value;
-  const range = document.getElementById('portRange').value;
+  const name = document.getElementById('userName').value.trim();
+  const host = document.getElementById('targetHost').value.trim();
+  const range = document.getElementById('portRange').value.trim();
 
   fetch('/scan', {
     method: 'POST',
@@ -31,7 +43,15 @@ function startScan() {
     .then(res => res.json())
     .then(data => {
       overlay.classList.add('d-none');
+      if (data.error) {
+        alert("Scan failed: " + data.error);
+        return;
+      }
       displayResults(data);
+    })
+    .catch(err => {
+      overlay.classList.add('d-none');
+      alert("Scan error: " + err.message);
     });
 }
 
@@ -39,33 +59,48 @@ function displayResults(data) {
   const section = document.getElementById('resultsSection');
   const portContainer = document.getElementById('portResults');
   const geoInfo = document.getElementById('geoInfo');
+  const deceptionAlert = document.getElementById('deceptionAlert');
   const threatBar = document.getElementById('threatBar');
 
   section.classList.remove('d-none');
   portContainer.innerHTML = '';
-  data.open_ports.forEach(p => {
-    const div = document.createElement('div');
-    div.classList.add('open-port');
-    div.innerText = `Port ${p.port} – ${p.description}`;
-    portContainer.appendChild(div);
-  });
 
-  geoInfo.innerText = `Location: ${data.geo.city}, ${data.geo.country} [${data.geo.lat}, ${data.geo.lon}]`;
-
-  if (data.deception) {
-    document.getElementById('deceptionAlert').innerText = '⚠️ DNS/CDN Deception Detected';
+  if (Array.isArray(data.open_ports)) {
+    data.open_ports.forEach(p => {
+      const div = document.createElement('div');
+      div.classList.add('open-port');
+      div.innerText = `Port ${p.port} – ${p.description || 'Unknown'}`;
+      portContainer.appendChild(div);
+    });
+  } else {
+    portContainer.innerText = 'No open ports detected.';
   }
 
-  // Threat level bar
+  // Geo Info
+  if (data.geo) {
+    geoInfo.innerText = `Location: ${data.geo.city}, ${data.geo.country} [${data.geo.lat}, ${data.geo.lon}]`;
+  } else {
+    geoInfo.innerText = 'Location data unavailable.';
+  }
+
+  // Deception Alert
+  if (data.deception) {
+    deceptionAlert.innerText = '⚠️ DNS/CDN Deception Detected';
+  } else {
+    deceptionAlert.innerText = '';
+  }
+
+  // Threat Level Calculation
+  const count = data.open_ports?.length || 0;
   let level = 'Low';
   let percent = 25;
   let bg = 'bg-success';
 
-  if (data.open_ports.length >= 50) {
+  if (count >= 50) {
     level = 'High';
     percent = 100;
     bg = 'bg-danger';
-  } else if (data.open_ports.length >= 10) {
+  } else if (count >= 10) {
     level = 'Medium';
     percent = 60;
     bg = 'bg-warning';
@@ -79,8 +114,3 @@ function displayResults(data) {
 function downloadLog() {
   window.location.href = '/download-log';
 }
-
-window.onload = () => {
-  new bootstrap.Modal(document.getElementById('questionnaireModal')).show();
-};
-
