@@ -110,6 +110,38 @@ function displayResults(data) {
   threatBar.style.width = `${percent}%`;
   threatBar.innerText = level;
 }
+function isBlockedHost(host) {
+    const blocked = ["0.0.0.0", "127.0.0.1", "localhost"];
+    return blocked.includes(host.trim());
+}
+
+document.getElementById("scanForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    const host = document.getElementById("host").value.trim();
+    const portRange = document.getElementById("portRange").value.trim() || "1-1024";
+    const user = document.getElementById("username").value.trim() || "Anonymous";
+
+    if (isBlockedHost(host)) {
+        alert("❌ Scanning this host is not allowed: " + host);
+        return;
+    }
+
+    fetch("/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ host, range: portRange, name: user })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+        } else {
+            // Update UI with scan result
+            console.log("Scan successful:", data);
+        }
+    })
+    .catch(err => console.error("Scan error:", err));
+});
 
 function downloadLog() {
   window.location.href = '/download-log';
