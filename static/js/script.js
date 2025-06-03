@@ -1,4 +1,3 @@
-
 document.addEventListener('DOMContentLoaded', function () {
     const modal = document.getElementById('agePermissionModal');
     const yesBtn = document.getElementById('yesPermission');
